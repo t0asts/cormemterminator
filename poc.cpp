@@ -229,54 +229,6 @@ static ULONGLONG GetNtoskrnlBaseQSI()
 	return base;
 }
 
-static ULONGLONG GetNtoskrnlBaseIDT()
-{
-#pragma pack(push, 1)
-	struct {
-		USHORT limit;
-		ULONGLONG base;
-	} idtr = {};
-#pragma pack(pop)
-
-	__asm__ __volatile__("sidt %0" : "=m"(idtr));
-
-	if (!idtr.base)
-		return 0;
-
-	struct {
-		USHORT offsetLow;
-		USHORT selector;
-		BYTE ist;
-		BYTE typeAttr;
-		USHORT offsetMid;
-		ULONG offsetHigh;
-		ULONG reserved;
-	} idtEntry = {};
-
-	ULONGLONG entryAddr = idtr.base + 0x0E * 16;
-
-	if (!KRead(entryAddr, &idtEntry, sizeof(idtEntry)))
-		return 0;
-
-	ULONGLONG handler = ((ULONGLONG)idtEntry.offsetHigh << 32) | ((ULONGLONG)idtEntry.offsetMid << 16) | (ULONGLONG)idtEntry.offsetLow;
-
-	if (!handler)
-		return 0;
-
-	ULONGLONG page = handler & ~0xFFFULL;
-
-	for (int scan = 0; scan < 0x800; scan++) {
-		USHORT magic = 0;
-
-		if (KRead(page, &magic, 2) && magic == 0x5A4D)
-			return page;
-
-		page -= 0x1000;
-	}
-
-	return 0;
-}
-
 static ULONGLONG GetNtoskrnlBaseVAScan()
 {
 	const ULONGLONG VA_START = 0xFFFFF80000000000ULL;
@@ -323,9 +275,6 @@ static ULONGLONG GetNtoskrnlBaseVAScan()
 static ULONGLONG GetNtoskrnlBase()
 {
 	ULONGLONG base = GetNtoskrnlBaseQSI();
-
-	if (!base)
-		base = GetNtoskrnlBaseIDT();
 
 	if (!base)
 		base = GetNtoskrnlBaseVAScan();
