@@ -3,4 +3,4 @@ POC to use the Sapera Memory Manager driver "CorMem.sys" (40c855d20d497823716a08
 To build: `x86_64-w64-mingw32-g++ -O2 -o poc.exe poc.cpp -lntdll -static 2>&1`
 
 To elevate: `poc.exe elevate`  
-To terminate a process `poc.exe kill 1212` or `poc.exe kill msmpeng.exe`
+To terminate a process: `poc.exe kill 1212` or `poc.exe kill msmpeng.exe`
